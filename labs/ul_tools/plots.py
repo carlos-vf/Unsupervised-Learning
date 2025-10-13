@@ -86,4 +86,108 @@ def plot_figure(x, c, title="", colorbar_title="", cmap='viridis', dynamic=False
 
             plt.show()
 
+
+
+def pca_scree_plot(eigenvalues):
+    """Plot the eigenvalue spectrum (scree plot) from PCA.
+
+    Parameters
+    ----------
+    eigenvalues : ndarray
+        Array of eigenvalues from PCA, sorted in descending order.
+    """
+    plt.figure(figsize=(10, 6))
+    plt.semilogy(range(1, len(eigenvalues) + 1), eigenvalues, 'o-')
+    plt.xlabel('Principal Component')
+    plt.ylabel('Eigenvalue (log-scale)')
+    plt.title('Eigenvalue Spectrum (Scree Plot)')
+    plt.grid(True)
+    plt.xticks(range(1, len(eigenvalues) + 1))
+    plt.show()
+
+
+
+def project_2d(X, pc, color, class_names=None):
+    """Project data onto the first two principal components and plot.
+    
+    Parameters
+    ----------
+    X : DataFrame
+        Input data of shape (n_samples, n_features).
+    pc : ndarray
+        Principal components from PCA of shape (n_features, n_features).
+    color : ndarray
+        Color values for each point. Shape should be (n_samples,).
+    class_names : list, optional
+        List of class names for legend. Default is None.
+    """
+
+    W_2D = pc[:, :2]
+    X_train_pca_2D = X.dot(W_2D)
+
+    # 2D Projection Plot
+    plt.figure(figsize=(12, 10))
+    scatter = plt.scatter(X_train_pca_2D.iloc[:, 0], X_train_pca_2D.iloc[:, 1], c=color, cmap='viridis', alpha=0.7)
+    plt.xlabel('Principal Component 1')
+    plt.ylabel('Principal Component 2')
+    plt.title('Training Data Projected onto First Two Principal Components')
+    if class_names is not None:
+        plt.legend(handles=scatter.legend_elements()[0], labels=class_names.tolist())
+    plt.grid(True)
+    plt.show()
+
+
+
+def project_3d(X, pc, color, class_names=None):
+    """Project data onto the first three principal components and plot.
+
+    Parameters
+    ----------
+    X : DataFrame
+        Input data of shape (n_samples, n_features).
+    pc : ndarray
+        Principal components from PCA of shape (n_features, n_features).
+    color : ndarray
+        Color values for each point. Shape should be (n_samples,).
+    class_names : list, optional
+        List of class names for legend. Default is None.
+
+    """
+    W_3D = pc[:, :3]
+    X_train_pca_3D = X.dot(W_3D)
+
+    # 3D Projection Plot
+    fig = plt.figure(figsize=(12, 8))
+    ax = fig.add_subplot(111, projection='3d')
+    scatter_3d = ax.scatter(X_train_pca_3D.iloc[:, 0], X_train_pca_3D.iloc[:, 1], X_train_pca_3D.iloc[:, 2], c=color, cmap='viridis', alpha=0.7)
+    ax.set_xlabel('Principal Component 1')
+    ax.set_ylabel('Principal Component 2')
+    ax.set_zlabel('Principal Component 3')
+    ax.set_title('Training Data Projected onto First Three Principal Components')
+    if class_names is not None:
+        ax.legend(handles=scatter_3d.legend_elements()[0], labels=class_names.tolist())
+    plt.show()
+
+
+
+def plot_isomap(y, color, title):
+    """Plot 2D Isomap embedding.
+    Parameters
+    ----------
+    y : ndarray
+        2D embedded data of shape (n_samples, 2).
+    color : ndarray
+        Color values for each point. Shape should be (n_samples,).
+    title : str
+        Title of the plot.
+    """
+
+    plt.figure(figsize=(8, 6))
+    plt.scatter(y[:, 0], y[:, 1], c=color, edgecolor='k', s=50, alpha=0.7)
+    plt.title(title)
+    plt.xlabel('Component 1')
+    plt.ylabel('Component 2')
+    plt.grid()
+    plt.axis('equal')
+    plt.show()
     
