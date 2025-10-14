@@ -3,15 +3,25 @@ import networkx as nx
 from sklearn.neighbors import NearestNeighbors
 
 
-def scale_and_center(x):
-    """Scale and center the dataset x.
+def center(x):
+    """Center the dataset x.
 
     Parameters
     ----------
     x : ndarray
         Input data of shape (n_samples, n_features).
     """
-    return (x - x.mean()) / x.std()
+    return x - x.mean()
+
+def scale(x):
+    """Scale the dataset x to have unit variance.
+
+    Parameters
+    ----------
+    x : ndarray
+        Input data of shape (n_samples, n_features).
+    """
+    return x / x.std()
 
 
 def PCA(x):
