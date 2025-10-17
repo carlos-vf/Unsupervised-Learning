@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numpy as np
 import plotly.graph_objects as go
 
 
@@ -88,7 +89,7 @@ def plot_figure(x, c, title="", colorbar_title="", cmap='viridis', dynamic=False
 
 
 
-def pca_scree_plot(eigenvalues):
+def plot_eigenvalue_spectrum(eigenvalues):
     """Plot the eigenvalue spectrum (scree plot) from PCA.
 
     Parameters
@@ -107,66 +108,143 @@ def pca_scree_plot(eigenvalues):
 
 
 
-def project_2d(X, pc, color, class_names=None):
-    """Project data onto the first two principal components and plot.
-    
+def project_principal_components(x, y, z=None, dynamic=False, labels=None, title=None, color=None, cmap='viridis', class_names=None):
+    """Project data onto principal components and plot.
     Parameters
     ----------
-    X : DataFrame
-        Input data of shape (n_samples, n_features).
-    pc : ndarray
-        Principal components from PCA of shape (n_features, n_features).
-    color : ndarray
-        Color values for each point. Shape should be (n_samples,).
-    class_names : list, optional
-        List of class names for legend. Default is None.
+    x : ndarray
+        First principal component values. Shape should be (n_samples,).
+    y : ndarray
+        Second principal component values. Shape should be (n_samples,).
+    z : ndarray, optional
+        Third principal component values. Shape should be (n_samples,). Default is None.
+    dynamic : bool, optional
+        If True and z is provided, create an interactive 3D plot. Default is False.
+    labels : ndarray, optional
+        Discrete class labels for each point. Shape should be (n_samples,).
+        This will be used for coloring if provided.
+    title : str, optional
+        Title of the plot. Default is None.
+    color : ndarray, optional
+        Continuous color values for each point. Shape should be (n_samples,).
+        Used only if 'labels' is None.
+    cmap : str, optional
+        Colormap to use. Default is 'viridis'.
+    class_names : list or array, optional
+        List of class names for legend. Used only if 'labels' is not None.
     """
-
-    W_2D = pc[:, :2]
-    X_train_pca_2D = X.dot(W_2D)
 
     # 2D Projection Plot
-    plt.figure(figsize=(12, 10))
-    scatter = plt.scatter(X_train_pca_2D.iloc[:, 0], X_train_pca_2D.iloc[:, 1], c=color, cmap='viridis', alpha=0.7)
-    plt.xlabel('Principal Component 1')
-    plt.ylabel('Principal Component 2')
-    plt.title('Training Data Projected onto First Two Principal Components')
-    if class_names is not None:
-        plt.legend(handles=scatter.legend_elements()[0], labels=class_names.tolist())
-    plt.grid(True)
-    plt.show()
+    if z is None:
+        plt.figure(figsize=(8, 6))
+        
+        if labels is not None:
+            unique_labels = np.unique(labels)
+            # Generate a set of colors from the specified colormap
+            colors = plt.get_cmap(cmap)(np.linspace(0, 1, len(unique_labels)))
+            
+            for i, ul in enumerate(unique_labels):
+                idx = (labels == ul)
+                # Use class_names for the legend if provided
+                label = class_names[i] if (class_names is not None and i < len(class_names)) else f'Class {ul}'
+                plt.scatter(x[idx], y[idx], color=colors[i], label=label, alpha=0.7)
+            
+            plt.legend()
+        else:
+            # Plot with continuous color (e.g., from 'phi')
+            scatter = plt.scatter(x, y, c=color, cmap=cmap, alpha=0.7)
+            plt.colorbar(scatter, label='Color Value')
 
-
-
-def project_3d(X, pc, color, class_names=None):
-    """Project data onto the first three principal components and plot.
-
-    Parameters
-    ----------
-    X : DataFrame
-        Input data of shape (n_samples, n_features).
-    pc : ndarray
-        Principal components from PCA of shape (n_features, n_features).
-    color : ndarray
-        Color values for each point. Shape should be (n_samples,).
-    class_names : list, optional
-        List of class names for legend. Default is None.
-
-    """
-    W_3D = pc[:, :3]
-    X_train_pca_3D = X.dot(W_3D)
+        plt.xlabel('Principal Component 1')
+        plt.ylabel('Principal Component 2')
+        if title is not None:
+            plt.title(title)
+        plt.grid(True)
+        plt.axis('equal')
+        plt.show()
 
     # 3D Projection Plot
-    fig = plt.figure(figsize=(12, 8))
-    ax = fig.add_subplot(111, projection='3d')
-    scatter_3d = ax.scatter(X_train_pca_3D.iloc[:, 0], X_train_pca_3D.iloc[:, 1], X_train_pca_3D.iloc[:, 2], c=color, cmap='viridis', alpha=0.7)
-    ax.set_xlabel('Principal Component 1')
-    ax.set_ylabel('Principal Component 2')
-    ax.set_zlabel('Principal Component 3')
-    ax.set_title('Training Data Projected onto First Three Principal Components')
-    if class_names is not None:
-        ax.legend(handles=scatter_3d.legend_elements()[0], labels=class_names.tolist())
-    plt.show()
+    elif z is not None:
+        if dynamic:
+            fig = go.Figure()
+
+            if labels is not None:
+                unique_labels = np.unique(labels)
+                # Generate a set of colors from the specified colormap
+                colors_mpl = plt.get_cmap(cmap)(np.linspace(0, 1, len(unique_labels)))
+                
+                for i, ul in enumerate(unique_labels):
+                    idx = (labels == ul)
+                    # Use class_names for the legend if provided
+                    label = class_names[i] if (class_names is not None and i < len(class_names)) else f'Class {ul}'
+                    r, g, b, a = colors_mpl[i]
+                    color_string = f'rgba({int(r*255)}, {int(g*255)}, {int(b*255)}, {a})'
+                    fig.add_trace(go.Scatter3d(
+                        x=x[idx],
+                        y=y[idx],
+                        z=z[idx],
+                        mode='markers',
+                        marker=dict(
+                            size=5,
+                            color=color_string,
+                            opacity=0.8
+                        ),
+                        name=str(label)
+                    ))
+            else:
+                fig.add_trace(go.Scatter3d(
+                    x=x,
+                    y=y,
+                    z=z,
+                    mode='markers',
+                    marker=dict(
+                        size=5,
+                        color=color,
+                        colorscale=cmap,
+                        opacity=0.8,
+                        colorbar=dict(title='Color Value')
+                    )
+                ))
+            fig.update_layout(
+                scene=dict(
+                    xaxis=dict(title="Principal Component 1"),
+                    yaxis=dict(title="Principal Component 2"),
+                    zaxis=dict(title="Principal Component 3")
+                ),
+                title=title if title is not None else "",
+                margin=dict(l=0, r=0, b=0, t=40)
+            )
+            fig.show()
+
+        else:
+            fig = plt.figure(figsize=(12, 10))
+            ax = fig.add_subplot(111, projection='3d')
+
+            if labels is not None:
+                unique_labels = np.unique(labels)
+                # Generate a set of colors from the specified colormap
+                colors = plt.get_cmap(cmap)(np.linspace(0, 1, len(unique_labels)))
+                
+                for i, ul in enumerate(unique_labels):
+                    idx = (labels == ul)
+                    # Use class_names for the legend if provided
+                    label = class_names[i] if (class_names is not None and i < len(class_names)) else f'Class {ul}'
+                    ax.scatter(x[idx], y[idx], z[idx], color=colors[i], label=label, alpha=0.7)
+                
+                ax.legend()
+            else:
+                # Plot with continuous color (e.g., from 'phi')
+                scatter = ax.scatter(x, y, z, c=color, cmap=cmap, alpha=0.7)
+                fig.colorbar(scatter, ax=ax, label='Color Value')
+            
+            ax.set_xlabel('Principal Component 1')
+            ax.set_ylabel('Principal Component 2')
+            ax.set_zlabel('Principal Component 3')
+            if title is not None:
+                ax.set_title(title)
+            plt.show()
+
+
 
 
 

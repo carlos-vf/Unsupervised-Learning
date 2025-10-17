@@ -24,14 +24,19 @@ def scale(x):
     return x / x.std()
 
 
-def PCA(x):
+def PCA(x, n_components=None):
     """Perform Principal Component Analysis (PCA) on the dataset x.
 
     Parameters
     ----------
     x : ndarray
         Input data of shape (n_samples, n_features).
+    n_components : int, optional
+        Number of principal components to return. If None, return all components. Default is None.
     """
+
+    # Center the data
+    x = center(x)
 
     # Covariance matrix
     c = np.cov(x, rowvar=False)
@@ -45,8 +50,17 @@ def PCA(x):
     idx = eigenvalues.argsort()[::-1]
     eigenvalues = eigenvalues[idx]
     eigenvectors = eigenvectors[:, idx]
+
+    if n_components is not None:
+        eigenvalues = eigenvalues[:n_components]
+        eigenvectors = eigenvectors[:, :n_components]
+
+    # Compute the projections
+    projections = x @ eigenvectors
+
+    return projections, eigenvalues, eigenvectors
     
-    return eigenvalues, eigenvectors
+    
 
 
 def dijkstra(g, source):
@@ -165,3 +179,60 @@ def isomap(x, n_components, n_neighbors=5):
     embedded_coordinates = top_eigenvectors @ np.diag(np.sqrt(positive_eigenvalues))
 
     return embedded_coordinates
+
+
+
+def kernel_PCA(x, kernel_func, degree=None, sigma=None, n_components=None):
+    """Perform Kernel Principal Component Analysis (Kernel PCA) on the dataset x.
+    Parameters
+    ----------
+    x : ndarray
+        Input data of shape (n_samples, n_features).
+    kernel_func : str
+        Kernel function to use: 'linear', 'polynomial', or 'gaussian'.
+    degree : int, optional
+        Degree for the polynomial kernel. Required if kernel_func is 'polynomial'.
+    sigma : float, optional
+        Standard deviation for the Gaussian kernel. Required if kernel_func is 'gaussian'.
+    n_components : int, optional
+        Number of principal components to return. If None, return all components. Default is None.
+    """
+
+    # Kernel matrix computation
+    if kernel_func == 'polynomial':
+        if degree is None:
+            raise ValueError("For polynomial kernel 'degree' parameter must be provided.")
+        k = (x @ x.T + 1) ** degree
+
+    elif kernel_func == 'gaussian':
+        if sigma is None:
+            raise ValueError("For Gaussian kernel 'sigma' parameter must be provided.")
+        k = np.exp(-np.linalg.norm(x[:, np.newaxis] - x[np.newaxis, :], axis=2)**2 / (2 * sigma**2))
+    
+    elif kernel_func == 'linear':
+        k = x @ x.T
+    
+    else:
+        raise ValueError("Unsupported kernel function. Use 'linear', 'polynomial' or 'gaussian'.")
+
+    # Centering the Kernel matrix
+    n_samples = k.shape[0]
+    one_n = np.ones((n_samples, n_samples)) / n_samples # n x n matrix with all entries equal to 1/n
+    k_centered = k - one_n @ k - k @ one_n + one_n @ k @ one_n
+
+    # Eigen decomposition
+    eigenvalues, eigenvectors = np.linalg.eigh(k_centered)
+
+    # Sort eigenvalues and eigenvectors in descending order
+    sorted_indices = np.argsort(eigenvalues)[::-1]
+    eigenvalues = eigenvalues[sorted_indices]
+    eigenvectors = eigenvectors[:, sorted_indices]
+
+    if n_components is not None:
+        eigenvalues = eigenvalues[:n_components]
+        eigenvectors = eigenvectors[:, :n_components]
+        
+    # Compute the projections
+    projections = eigenvectors * np.sqrt(eigenvalues)
+
+    return projections, eigenvalues, eigenvectors
