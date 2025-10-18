@@ -245,27 +245,4 @@ def project_principal_components(x, y, z=None, dynamic=False, labels=None, title
             plt.show()
 
 
-
-
-
-def plot_isomap(y, color, title):
-    """Plot 2D Isomap embedding.
-    Parameters
-    ----------
-    y : ndarray
-        2D embedded data of shape (n_samples, 2).
-    color : ndarray
-        Color values for each point. Shape should be (n_samples,).
-    title : str
-        Title of the plot.
-    """
-
-    plt.figure(figsize=(8, 6))
-    plt.scatter(y[:, 0], y[:, 1], c=color, edgecolor='k', s=50, alpha=0.7)
-    plt.title(title)
-    plt.xlabel('Component 1')
-    plt.ylabel('Component 2')
-    plt.grid()
-    plt.axis('equal')
-    plt.show()
     
